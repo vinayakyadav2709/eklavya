@@ -1,0 +1,52 @@
+# === Dependencies ===
+node_modules
+.pnp
+.pnp.js
+
+# === Lockfiles (uncomment if you prefer another package manager) ===
+# bun.lock
+# yarn.lock
+# package-lock.json
+
+# === Build outputs ===
+dist
+dist-ssr
+build
+*.tsbuildinfo
+
+# === Turbo / monorepo cache ===
+.turbo
+
+# === IDE ===
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# === OS files ===
+.DS_Store
+Thumbs.db
+
+# === Logs ===
+*.log
+logs
+
+# === Local env files (secrets) ===
+.env.local
+.env.*.local
+
+# === Vite / dev ===
+.vite
+*.local
+
+# === Convex ===
+.convex
+
+# === PWA generated ===
+dev-dist
+
+# === Misc ===
+.cache
+coverage
+*.pem

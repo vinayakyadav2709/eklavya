@@ -1,0 +1,14 @@
+{
+  "name": "@eklavya/db",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "dev": "convex dev"
+  },
+  "dependencies": {
+    "@convex-dev/better-auth": "^0.12.0",
+    "better-auth": "^1.6.9",
+    "convex": "^1.18.0"
+  }
+}
