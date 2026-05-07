@@ -1,8 +1,15 @@
-import { Outlet, createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
-import type { ReactNode } from 'react'
+import { Outlet, createRootRouteWithContext, HeadContent, Scripts, useRouterState } from '@tanstack/react-router'
+import { useState, type ReactNode } from 'react'
+import { ConvexProvider, ConvexReactClient } from 'convex/react'
+import type { Doc } from '@eklavya/db/convex/_generated/dataModel'
 import appCss from '../styles.css?url'
 
-export const Route = createRootRoute({
+export interface RouterContext {
+  accounts?: Doc<"accounts">[] | undefined
+  transactions?: Doc<"transactions">[] | undefined
+}
+
+export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
@@ -29,9 +36,27 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 function RootComponent() {
+  const router = useRouterState()
+  const isNotFound = router.matches.some((m) => m.status === 'notFound')
+  
+  // Initialize Convex client purely on the client side
+  const [convex] = useState(() => new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string))
+
+  if (isNotFound) {
+    return (
+      <ConvexProvider client={convex}>
+        <RootDocument>
+          <Outlet />
+        </RootDocument>
+      </ConvexProvider>
+    )
+  }
+
   return (
-    <RootDocument>
-      <Outlet />
-    </RootDocument>
+    <ConvexProvider client={convex}>
+      <RootDocument>
+        <Outlet />
+      </RootDocument>
+    </ConvexProvider>
   )
 }
