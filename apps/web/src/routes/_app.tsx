@@ -12,6 +12,7 @@ function LayoutComponent() {
   // stays alive even when navigating between child routes (tabs).
   useQuery(api.accounts.get)
   useQuery(api.transactions.get)
+  useQuery(api.providers.get)
 
   return (
     <WorkspaceLayout>

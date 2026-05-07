@@ -8,7 +8,10 @@ import {
   TableHeader,
   TableRow,
 } from "#/components/ui/table";
+import { useQuery } from "convex/react";
+import { api } from "@eklavya/db/convex/_generated/api";
 import type { Doc } from "@eklavya/db/convex/_generated/dataModel";
+import { PROVIDER_LOGOS } from "#/lib/utils";
 
 type AccountCategory = "liquid" | "investment" | "credit" | "entity";
 
@@ -26,6 +29,9 @@ function getCategoryConfig(category: AccountCategory) {
 }
 
 export function TableAccounts({ accounts }: { accounts: Doc<"accounts">[] | undefined }) {
+  const providers = useQuery(api.providers.get);
+  const providerMap = new Map((providers ?? []).map((p) => [p._id, p]));
+
   return (
     <div className="rounded-xl border bg-card shadow-xs/5">
       <Table>
@@ -53,6 +59,7 @@ export function TableAccounts({ accounts }: { accounts: Doc<"accounts">[] | unde
           ) : (
             accounts.map((account) => {
               const config = getCategoryConfig(account.category);
+              const provider = account.providerId ? providerMap.get(account.providerId) : null;
               const formattedBalance = new Intl.NumberFormat("en-IN", {
                 style: "currency",
                 currency: "INR",
@@ -84,8 +91,35 @@ export function TableAccounts({ accounts }: { accounts: Doc<"accounts">[] | unde
                       {config.label}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {account.institution || "—"}
+                  <TableCell>
+                    {provider ? (
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const logo = PROVIDER_LOGOS[provider.code] ?? {
+                            bg: "from-muted/40 to-muted/20",
+                            text: provider.code.slice(0, 2).toUpperCase(),
+                            fg: "text-muted-foreground",
+                          };
+                          return (
+                            <span
+                              className={
+                                "flex size-5 shrink-0 items-center justify-center rounded bg-gradient-to-br font-semibold text-[8px] " +
+                                logo.bg +
+                                " " +
+                                logo.fg
+                              }
+                            >
+                              {logo.text}
+                            </span>
+                          );
+                        })()}
+                        <span className="text-xs text-muted-foreground">{provider.name}</span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        {account.institution || "—"}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="pe-4 text-right font-mono tabular-nums font-medium">
                     <span className={account.isLiability ? "text-destructive" : ""}>

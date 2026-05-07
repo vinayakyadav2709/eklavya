@@ -8,7 +8,7 @@ import {
   SettingsIcon,
   WalletIcon,
 } from "lucide-react";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import * as React from "react";
 
 type NavGroup = {
@@ -41,6 +41,7 @@ const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 
 export function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   const routerState = useRouterState();
+  const navigate = useNavigate();
   const currentPath = routerState.location.pathname;
   const [collapsed, setCollapsed] = React.useState(false);
 
@@ -89,6 +90,14 @@ export function WorkspaceLayout({ children }: { children: React.ReactNode }) {
           </ul>
 
           <div className="mt-auto flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate({ to: "/settings" })}
+              className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
+              aria-label="Settings"
+            >
+              <SettingsIcon className="size-4" />
+            </button>
             <button
               type="button"
               onClick={() => setCollapsed(false)}
@@ -176,6 +185,7 @@ export function WorkspaceLayout({ children }: { children: React.ReactNode }) {
             </div>
             <button
               type="button"
+              onClick={() => navigate({ to: "/settings" })}
               className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
               aria-label="Settings"
             >

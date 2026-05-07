@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   BanknoteIcon,
   CreditCardIcon,
@@ -10,8 +10,9 @@ import {
 } from "lucide-react";
 import { Button } from "#/components/ui/button";
 
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@eklavya/db/convex/_generated/api";
+import { PROVIDER_LOGOS } from "#/lib/utils";
 
 type Category = "liquid" | "investment" | "credit" | "entity";
 
@@ -24,16 +25,30 @@ const CATEGORIES: { id: Category; label: string; meta: string; Icon: typeof Land
 
 export function AddAccountModal({ onClose }: { onClose: () => void }) {
   const createAccount = useMutation(api.accounts.create);
+  const providers = useQuery(api.providers.get);
+  const seedProviders = useMutation(api.providers.seed);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [category, setCategory] = useState<Category>("liquid");
   const [name, setName] = useState("");
   const [balance, setBalance] = useState("");
   const [institution, setInstitution] = useState("");
+  const [providerId, setProviderId] = useState<string | null>(null);
 
   const isEntity = category === "entity";
   const isCredit = category === "credit";
+  const isInvestment = category === "investment";
   const [isLiability, setIsLiability] = useState(isCredit);
+
+  useEffect(() => {
+    if (providers && providers.length === 0) {
+      seedProviders();
+    }
+  }, [providers, seedProviders]);
+
+  useEffect(() => {
+    setProviderId(null);
+  }, [category]);
 
   const handleSave = async () => {
     try {
@@ -44,6 +59,7 @@ export function AddAccountModal({ onClose }: { onClose: () => void }) {
         balance: parseFloat(balance) || 0,
         institution: institution || undefined,
         isLiability,
+        providerId: providerId || undefined,
       });
       onClose();
     } catch (e) {
@@ -127,6 +143,68 @@ export function AddAccountModal({ onClose }: { onClose: () => void }) {
               })}
             </div>
           </div>
+
+          {isInvestment && providers && providers.length > 0 && (
+            <div>
+              <div className="mb-2 font-mono text-[10px] text-muted-foreground uppercase tracking-[0.25em]">
+                Provider
+              </div>
+              <div className="flex flex-col gap-2">
+                {providers
+                  .filter((p) => p.isActive)
+                  .map((provider) => {
+                    const logo = PROVIDER_LOGOS[provider.code] ?? {
+                      bg: "from-muted/40 to-muted/20",
+                      text: provider.code.slice(0, 2).toUpperCase(),
+                      fg: "text-muted-foreground",
+                    };
+                    const selected = providerId === provider._id;
+                    return (
+                      <label
+                        key={provider._id}
+                        className={
+                          "flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors " +
+                          (selected
+                            ? "border-foreground/60 bg-foreground/[0.04]"
+                            : "border-border/60 hover:border-foreground/30")
+                        }
+                      >
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          checked={selected}
+                          onChange={() => setProviderId(provider._id)}
+                        />
+                        <span
+                          className={
+                            "size-3.5 rounded-full border " +
+                            (selected
+                              ? "border-foreground bg-foreground ring-2 ring-foreground/20 ring-offset-2 ring-offset-background"
+                              : "border-border")
+                          }
+                        />
+                        <span
+                          className={
+                            "flex size-5 shrink-0 items-center justify-center rounded bg-gradient-to-br font-semibold text-[10px] " +
+                            logo.bg +
+                            " " +
+                            logo.fg
+                          }
+                        >
+                          {logo.text}
+                        </span>
+                        <div className="flex-1">
+                          <div className="text-sm">{provider.name}</div>
+                          <div className="text-muted-foreground text-xs">
+                            {provider.code.toUpperCase()}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
 
           <div>
             <div className="mb-2 font-mono text-[10px] text-muted-foreground uppercase tracking-[0.25em]">

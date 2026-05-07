@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppTasksRouteImport } from './routes/_app/tasks'
+import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppNewMeRouteImport } from './routes/_app/new-me'
 import { Route as AppHabitsRouteImport } from './routes/_app/habits'
 import { Route as AppCashflowRouteImport } from './routes/_app/cashflow'
@@ -41,6 +42,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppTasksRoute = AppTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
 const AppNewMeRoute = AppNewMeRouteImport.update({
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/cashflow': typeof AppCashflowRoute
   '/habits': typeof AppHabitsRoute
   '/new-me': typeof AppNewMeRoute
+  '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
   '/attack-mode/goals': typeof AppAttackModeGoalsRoute
   '/attack-mode/journal': typeof AppAttackModeJournalRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/cashflow': typeof AppCashflowRoute
   '/habits': typeof AppHabitsRoute
   '/new-me': typeof AppNewMeRoute
+  '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
   '/': typeof AppIndexRoute
   '/attack-mode/goals': typeof AppAttackModeGoalsRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/_app/cashflow': typeof AppCashflowRoute
   '/_app/habits': typeof AppHabitsRoute
   '/_app/new-me': typeof AppNewMeRoute
+  '/_app/settings': typeof AppSettingsRoute
   '/_app/tasks': typeof AppTasksRoute
   '/_app/': typeof AppIndexRoute
   '/_app/attack-mode/goals': typeof AppAttackModeGoalsRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/cashflow'
     | '/habits'
     | '/new-me'
+    | '/settings'
     | '/tasks'
     | '/attack-mode/goals'
     | '/attack-mode/journal'
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/cashflow'
     | '/habits'
     | '/new-me'
+    | '/settings'
     | '/tasks'
     | '/'
     | '/attack-mode/goals'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/_app/cashflow'
     | '/_app/habits'
     | '/_app/new-me'
+    | '/_app/settings'
     | '/_app/tasks'
     | '/_app/'
     | '/_app/attack-mode/goals'
@@ -221,6 +233,13 @@ declare module '@tanstack/react-router' {
       path: '/tasks'
       fullPath: '/tasks'
       preLoaderRoute: typeof AppTasksRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/new-me': {
@@ -321,6 +340,7 @@ interface AppRouteChildren {
   AppCashflowRoute: typeof AppCashflowRoute
   AppHabitsRoute: typeof AppHabitsRoute
   AppNewMeRoute: typeof AppNewMeRoute
+  AppSettingsRoute: typeof AppSettingsRoute
   AppTasksRoute: typeof AppTasksRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -332,6 +352,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCashflowRoute: AppCashflowRoute,
   AppHabitsRoute: AppHabitsRoute,
   AppNewMeRoute: AppNewMeRoute,
+  AppSettingsRoute: AppSettingsRoute,
   AppTasksRoute: AppTasksRoute,
   AppIndexRoute: AppIndexRoute,
 }
