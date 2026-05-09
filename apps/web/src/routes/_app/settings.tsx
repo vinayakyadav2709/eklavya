@@ -5,6 +5,8 @@ import {
   PuzzleIcon,
   CheckIcon,
   ExternalLinkIcon,
+  PlusIcon,
+  TrashIcon,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@eklavya/db/convex/_generated/api";
@@ -15,6 +17,7 @@ import type { Doc } from "@eklavya/db/convex/_generated/dataModel";
 const NAV = [
   { icon: SettingsIcon, label: "General", active: true },
   { icon: PuzzleIcon, label: "Integrations" },
+  { icon: CheckIcon, label: "Task Pillars" },
 ];
 
 export const Route = createFileRoute("/_app/settings")({
@@ -29,6 +32,12 @@ function SettingsPage() {
   const providers = useQuery(api.providers.get);
   const seedProviders = useMutation(api.providers.seed);
   const accounts = useQuery(api.accounts.get);
+  const pillars = useQuery(api.pillars.get);
+  const createPillar = useMutation(api.pillars.create);
+  const removePillar = useMutation(api.pillars.remove);
+
+  const [newPillarName, setNewPillarName] = useState("");
+  const [newPillarColor, setNewPillarColor] = useState("#3b82f6");
 
   useEffect(() => {
     if (providers && providers.length === 0) {
@@ -90,6 +99,80 @@ function SettingsPage() {
           {activeTab === "General" && (
             <div className="mt-8 text-muted-foreground text-sm">
               General settings coming soon.
+            </div>
+          )}
+
+          {activeTab === "Task Pillars" && (
+            <div className="mt-8 space-y-6">
+              <div className="rounded-xl border border-border/60 bg-background/40 p-6">
+                <h2 className="font-heading text-lg">Your Power Pillars</h2>
+                <p className="mt-1 text-muted-foreground text-sm">
+                  Define the core areas of your life (e.g. Rich, Muscular, Intelligent) to categorize your Nuclear Tasks.
+                </p>
+
+                <div className="mt-6 flex items-end gap-3">
+                  <label className="flex-1">
+                    <span className="mb-1 block text-xs text-muted-foreground">Pillar Name</span>
+                    <input
+                      type="text"
+                      value={newPillarName}
+                      onChange={(e) => setNewPillarName(e.target.value)}
+                      placeholder="e.g. Muscular"
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    />
+                  </label>
+                  <label className="w-24 shrink-0">
+                    <span className="mb-1 block text-xs text-muted-foreground">Color</span>
+                    <input
+                      type="color"
+                      value={newPillarColor}
+                      onChange={(e) => setNewPillarColor(e.target.value)}
+                      className="flex h-9 w-full cursor-pointer rounded-md border border-input bg-background p-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!newPillarName.trim()) return;
+                      await createPillar({ name: newPillarName, color: newPillarColor });
+                      setNewPillarName("");
+                    }}
+                    disabled={!newPillarName.trim()}
+                    className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                  >
+                    <PlusIcon className="mr-1 size-4" />
+                    Add
+                  </button>
+                </div>
+
+                {pillars !== undefined && pillars.length > 0 && (
+                  <ul className="mt-6 space-y-2">
+                    {pillars.map((p) => (
+                      <li key={p._id} className="flex items-center justify-between rounded-lg border border-border/40 bg-background px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <span
+                            className="size-3 rounded-full shadow-sm"
+                            style={{ backgroundColor: p.color || "#ccc" }}
+                          />
+                          <span className="font-medium text-sm">{p.name}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removePillar({ id: p._id })}
+                          className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <TrashIcon className="size-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {pillars !== undefined && pillars.length === 0 && (
+                  <div className="mt-6 rounded-lg border border-dashed border-border/70 p-8 text-center text-muted-foreground text-sm">
+                    No pillars added yet. Create one above to get started.
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

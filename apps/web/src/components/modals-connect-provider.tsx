@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
-import { XIcon, LinkIcon } from "lucide-react";
+import { XIcon, LinkIcon, ExternalLinkIcon } from "lucide-react";
 import { Button } from "#/components/ui/button";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useConvex } from "convex/react";
 import { api } from "@eklavya/db/convex/_generated/api";
-import { PROVIDER_LOGOS } from "#/lib/utils";
+import { getLoginURL } from "@eklavya/providers";
 import type { Doc } from "@eklavya/db/convex/_generated/dataModel";
 
 type Provider = Doc<"providers">;
+
+type Step = "credentials" | "totp";
 
 export function ConnectProviderModal({
   provider,
@@ -16,50 +18,112 @@ export function ConnectProviderModal({
   onClose: () => void;
 }) {
   const accounts = useQuery(api.accounts.get);
-  const updateSync = useMutation(api.accounts.updateSync);
+  const convex = useConvex();
+  const saveKiteCredentials = useMutation(api.accounts.saveKiteCredentials);
+  const saveKotakCredentials = useMutation(api.accounts.saveKotakCredentials);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const isKotak = provider.code === "kotak";
+  const [step, setStep] = useState<Step>("credentials");
 
   const investmentAccounts = (accounts ?? []).filter(
     (a) => a.category === "investment"
   );
 
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
-  const [apiKey, setApiKey] = useState("");
-  const [accessToken, setAccessToken] = useState("");
-  const [extraFields, setExtraFields] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (investmentAccounts.length > 0 && !selectedAccountId) {
-      setSelectedAccountId(investmentAccounts[0]._id);
+      const existing = investmentAccounts.find(
+        (a) => a.providerId === provider._id
+      );
+      setSelectedAccountId(existing?._id || investmentAccounts[0]._id);
     }
   }, [investmentAccounts, selectedAccountId]);
 
-  const logo = PROVIDER_LOGOS[provider.code] ?? {
-    bg: "from-muted/40 to-muted/20",
-    text: provider.code.slice(0, 2).toUpperCase(),
-    fg: "text-muted-foreground",
+  const [redirectUrl, setRedirectUrl] = useState(
+    `${window.location.origin}/kite/callback`
+  );
+  const [consumerKey, setConsumerKey] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [ucc, setUcc] = useState("");
+  const [mpin, setMpin] = useState("");
+  const [totp, setTotp] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [apiSecret, setApiSecret] = useState("");
+
+  useEffect(() => {
+    if (!selectedAccountId || !accounts) return;
+    const account = accounts.find((a) => a._id === selectedAccountId);
+    if (account?.apiConfig?.config) {
+      const c = account.apiConfig.config as Record<string, string>;
+      if (c.apiKey) setApiKey(c.apiKey);
+      if (c.apiSecret) setApiSecret(c.apiSecret);
+      if (c.redirectUrl) setRedirectUrl(c.redirectUrl);
+      if (c.consumerKey) setConsumerKey(c.consumerKey);
+      if (c.mobileNumber) setMobileNumber(c.mobileNumber);
+      if (c.ucc) setUcc(c.ucc);
+      if (c.mpin) setMpin(c.mpin);
+    }
+  }, [selectedAccountId]);
+
+  const handleKiteConnect = async () => {
+    if (!selectedAccountId || !apiKey || !apiSecret) return;
+    setError("");
+    setIsSubmitting(true);
+    try {
+      const trimmedRedirect = redirectUrl.trim();
+      await saveKiteCredentials({
+        accountId: selectedAccountId as any,
+        apiKey,
+        apiSecret,
+        redirectUrl: trimmedRedirect,
+        providerId: provider._id,
+      });
+      const loginUrl = getLoginURL(apiKey, trimmedRedirect);
+      window.open(loginUrl, "_blank");
+      onClose();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleConnect = async () => {
-    if (!selectedAccountId) return;
+  const handleKotakSaveCredentials = async () => {
+    if (!selectedAccountId || !consumerKey || !mobileNumber || !ucc || !mpin) return;
+    setError("");
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      const config: Record<string, string> = { apiKey };
-      if (accessToken) config.accessToken = accessToken;
-      Object.assign(config, extraFields);
-
-      await updateSync({
-        id: selectedAccountId as any,
+      await saveKotakCredentials({
+        accountId: selectedAccountId as any,
+        consumerKey,
+        mobileNumber,
+        ucc,
+        mpin,
         providerId: provider._id,
-        lastSyncedAt: new Date().toISOString(),
-        apiConfig: {
-          status: "active",
-          config,
-        },
+      });
+      setStep("totp");
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleKotakTOTP = async () => {
+    if (!selectedAccountId || !totp || totp.length !== 6) return;
+    setError("");
+    setIsSubmitting(true);
+    try {
+      await convex.action(api.kotakAuth.authenticateKotak, {
+        accountId: selectedAccountId as any,
+        totp,
       });
       onClose();
-    } catch (e) {
-      console.error("Failed to connect provider", e);
+    } catch (e: any) {
+      setError(e.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -78,7 +142,9 @@ export function ConnectProviderModal({
           <div>
             <div className="font-heading text-sm">Connect {provider.name}</div>
             <div className="mt-0.5 text-muted-foreground text-xs">
-              Link your {provider.name} account to sync data.
+              {isKotak
+                ? "Enter credentials and TOTP to sync your portfolio."
+                : "Link your brokerage account to sync data."}
             </div>
           </div>
           <button
@@ -130,50 +196,183 @@ export function ConnectProviderModal({
                 </div>
               </div>
 
-              <div>
-                <div className="mb-2 font-mono text-[10px] text-muted-foreground uppercase tracking-[0.25em]">
-                  API Credentials
-                </div>
-                <div className="space-y-3">
-                  <label className="block">
-                    <span className="mb-1 block text-xs text-muted-foreground">API Key</span>
-                    <input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="Enter API key"
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    />
-                  </label>
+              {!isKotak && step === "credentials" && (
+                <>
+                  <div>
+                    <div className="mb-2 font-mono text-[10px] text-muted-foreground uppercase tracking-[0.25em]">
+                      API Credentials
+                    </div>
+                    <div className="space-y-3">
+                      <label className="block">
+                        <span className="mb-1 block text-xs text-muted-foreground">API Key</span>
+                        <input
+                          type="password"
+                          value={apiKey}
+                          onChange={(e) => setApiKey(e.target.value)}
+                          placeholder="Enter your Kite API key"
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-1 block text-xs text-muted-foreground">API Secret</span>
+                        <input
+                          type="password"
+                          value={apiSecret}
+                          onChange={(e) => setApiSecret(e.target.value)}
+                          placeholder="Enter your Kite API secret"
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-1 block text-xs text-muted-foreground">Redirect URL</span>
+                        <input
+                          type="text"
+                          value={redirectUrl}
+                          onChange={(e) => setRedirectUrl(e.target.value)}
+                          placeholder="http://localhost:3000/kite/callback"
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        />
+                      </label>
+                    </div>
+                  </div>
 
+                  <div className="rounded-lg border border-border/60 bg-foreground/[0.02] p-3">
+                    <div className="flex items-start gap-2">
+                      <ExternalLinkIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                      <div className="text-xs text-muted-foreground leading-relaxed">
+                        You will be redirected to Zerodha to authorize. Set your Kite app redirect
+                        URL to{" "}
+                        <code className="rounded bg-foreground/[0.06] px-1 py-0.5 font-mono text-[11px]">
+                          {redirectUrl.trim() || "/kite/callback"}
+                        </code>{" "}
+                        in your Kite Developer Console.
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {isKotak && step === "credentials" && (
+                <div>
+                  <div className="mb-2 font-mono text-[10px] text-muted-foreground uppercase tracking-[0.25em]">
+                    Kotak Neo Credentials
+                  </div>
+                  <div className="space-y-3">
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-muted-foreground">Consumer Key</span>
+                      <input
+                        type="password"
+                        value={consumerKey}
+                        onChange={(e) => setConsumerKey(e.target.value)}
+                        placeholder="Your Kotak Neo consumer key"
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-muted-foreground">Mobile Number</span>
+                      <input
+                        type="text"
+                        value={mobileNumber}
+                        onChange={(e) => setMobileNumber(e.target.value)}
+                        placeholder="e.g. 9876543210"
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-muted-foreground">UCC</span>
+                      <input
+                        type="text"
+                        value={ucc}
+                        onChange={(e) => setUcc(e.target.value)}
+                        placeholder="Your Unique Client Code"
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-muted-foreground">MPIN</span>
+                      <input
+                        type="password"
+                        value={mpin}
+                        onChange={(e) => setMpin(e.target.value)}
+                        placeholder="Your Kotak Neo MPIN"
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {isKotak && step === "totp" && (
+                <div>
+                  <div className="mb-2 font-mono text-[10px] text-muted-foreground uppercase tracking-[0.25em]">
+                    Enter TOTP
+                  </div>
                   <label className="block">
-                    <span className="mb-1 block text-xs text-muted-foreground">Access Token</span>
+                    <span className="mb-1 block text-xs text-muted-foreground">
+                      6-Digit TOTP Code
+                    </span>
                     <input
-                      type="password"
-                      value={accessToken}
-                      onChange={(e) => setAccessToken(e.target.value)}
-                      placeholder="Enter access token"
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={totp}
+                      onChange={(e) => setTotp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="000000"
+                      autoFocus
+                      className="flex h-12 w-full rounded-md border border-input bg-background px-4 text-center font-mono text-2xl tracking-[0.3em] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     />
                   </label>
+                  <p className="mt-3 text-muted-foreground text-xs">
+                    Open your Kotak Neo app to get the 6-digit TOTP. This code refreshes every 30
+                    seconds.
+                  </p>
                 </div>
-              </div>
+              )}
+
+              {error && (
+                <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3">
+                  <p className="text-destructive text-xs">{error}</p>
+                </div>
+              )}
             </>
           )}
         </div>
 
-        <div className="flex items-center justify-end border-border/60 border-t bg-background px-5 py-3 shrink-0">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between border-border/60 border-t bg-background px-5 py-3 shrink-0">
+          {isKotak && step === "totp" && (
+            <Button variant="ghost" onClick={() => setStep("credentials")}>
+              Back
+            </Button>
+          )}
+          <div className="flex items-center gap-2 ml-auto">
             <Button variant="ghost" onClick={onClose}>
               Cancel
             </Button>
-            <Button
-              onClick={handleConnect}
-              disabled={!selectedAccountId || !apiKey || isSubmitting}
-            >
-              <LinkIcon className="mr-1 size-4" />
-              {isSubmitting ? "Connecting..." : "Connect"}
-            </Button>
+            {!isKotak && (
+              <Button
+                onClick={handleKiteConnect}
+                disabled={!selectedAccountId || !apiKey || !apiSecret || isSubmitting}
+              >
+                <LinkIcon className="mr-1 size-4" />
+                {isSubmitting ? "Connecting..." : "Connect & Authorize"}
+              </Button>
+            )}
+            {isKotak && step === "credentials" && (
+              <Button
+                onClick={handleKotakSaveCredentials}
+                disabled={!selectedAccountId || !consumerKey || !mobileNumber || !ucc || !mpin || isSubmitting}
+              >
+                {isSubmitting ? "Saving..." : "Continue"}
+              </Button>
+            )}
+            {isKotak && step === "totp" && (
+              <Button
+                onClick={handleKotakTOTP}
+                disabled={!totp || totp.length !== 6 || isSubmitting}
+              >
+                {isSubmitting ? "Authenticating..." : "Authenticate"}
+              </Button>
+            )}
           </div>
         </div>
       </div>

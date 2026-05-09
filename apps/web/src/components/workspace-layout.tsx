@@ -1,4 +1,5 @@
 import {
+  BriefcaseBusinessIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CompassIcon,
@@ -26,6 +27,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { icon: DollarSignIcon, label: "Cashflow", to: "/cashflow" },
       { icon: WalletIcon, label: "Accounts", to: "/accounts" },
+      { icon: BriefcaseBusinessIcon, label: "Holdings", to: "/holdings" },
     ],
   },
   {

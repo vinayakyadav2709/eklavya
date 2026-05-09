@@ -37,6 +37,26 @@ export default defineSchema({
     isNuclear: v.boolean(),
   }).index("by_user", ["userId"]).index("by_user_date", ["userId", "deadline"]),
 
+  // TASKS & PILLARS (SWETABH SYSTEM)
+  pillars: defineTable({
+    userId: v.string(),
+    name: v.string(),
+    color: v.optional(v.string()),
+  }).index("by_user", ["userId"]),
+
+  powerTasks: defineTable({
+    userId: v.string(),
+    title: v.string(),
+    pillarId: v.optional(v.id("pillars")),
+    points: v.number(), // 2, 4, 6, 8
+    targetMetric: v.number(), // e.g. 4 (hours)
+    actualMetric: v.optional(v.number()), 
+    earnedPoints: v.optional(v.number()),
+    alarmTime: v.string(), // e.g. "10:00"
+    date: v.string(), // "YYYY-MM-DD" or "Tomorrow" logic
+    status: v.string(), // "pending", "completed"
+  }).index("by_user_date", ["userId", "date"]),
+
   // HABITS
   habits: defineTable({
     userId: v.string(),
@@ -74,7 +94,7 @@ export default defineSchema({
       status: v.string(), // "active", "expired", "error"
       config: v.any(), // flexible JSON per provider
     })),
-  }).index("by_user", ["userId"]),
+  }).index("by_user", ["userId"]).index("by_provider", ["providerId"]),
 
   // INVESTMENT HOLDINGS
   investmentHoldings: defineTable({

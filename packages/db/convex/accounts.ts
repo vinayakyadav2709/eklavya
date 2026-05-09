@@ -57,3 +57,76 @@ export const updateSync = mutation({
     return await ctx.db.patch(id, fields);
   },
 });
+
+export const saveKiteCredentials = mutation({
+  args: {
+    accountId: v.id("accounts"),
+    apiKey: v.string(),
+    apiSecret: v.string(),
+    redirectUrl: v.optional(v.string()),
+    providerId: v.optional(v.id("providers")),
+  },
+  handler: async (ctx, args) => {
+    const config: Record<string, string> = {
+      apiKey: args.apiKey,
+      apiSecret: args.apiSecret,
+    };
+    if (args.redirectUrl) {
+      config.redirectUrl = args.redirectUrl;
+    }
+    return await ctx.db.patch(args.accountId, {
+      providerId: args.providerId,
+      apiConfig: {
+        status: "pending",
+        config,
+      },
+    });
+  },
+});
+
+export const saveRequestToken = mutation({
+  args: {
+    accountId: v.id("accounts"),
+    requestToken: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const account = await ctx.db.get(args.accountId);
+    if (!account || !account.apiConfig) {
+      throw new Error("Account not found or no apiConfig");
+    }
+    return await ctx.db.patch(args.accountId, {
+      apiConfig: {
+        status: "pending",
+        config: {
+          ...account.apiConfig.config,
+          requestToken: args.requestToken,
+        },
+      },
+    });
+  },
+});
+
+export const saveKotakCredentials = mutation({
+  args: {
+    accountId: v.id("accounts"),
+    consumerKey: v.string(),
+    mobileNumber: v.string(),
+    ucc: v.string(),
+    mpin: v.string(),
+    providerId: v.optional(v.id("providers")),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.patch(args.accountId, {
+      providerId: args.providerId,
+      apiConfig: {
+        status: "pending",
+        config: {
+          consumerKey: args.consumerKey,
+          mobileNumber: args.mobileNumber,
+          ucc: args.ucc,
+          mpin: args.mpin,
+        },
+      },
+    });
+  },
+});

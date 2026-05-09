@@ -11,6 +11,14 @@
 import type * as accounts from "../accounts.js";
 import type * as http from "../http.js";
 import type * as investmentHoldings from "../investmentHoldings.js";
+import type * as kiteAuth from "../kiteAuth.js";
+import type * as kiteHelpers from "../kiteHelpers.js";
+import type * as kiteSync from "../kiteSync.js";
+import type * as kotakAuth from "../kotakAuth.js";
+import type * as kotakHelpers from "../kotakHelpers.js";
+import type * as kotakSync from "../kotakSync.js";
+import type * as pillars from "../pillars.js";
+import type * as powerTasks from "../powerTasks.js";
 import type * as providers from "../providers.js";
 import type * as transactions from "../transactions.js";
 
@@ -24,6 +32,14 @@ declare const fullApi: ApiFromModules<{
   accounts: typeof accounts;
   http: typeof http;
   investmentHoldings: typeof investmentHoldings;
+  kiteAuth: typeof kiteAuth;
+  kiteHelpers: typeof kiteHelpers;
+  kiteSync: typeof kiteSync;
+  kotakAuth: typeof kotakAuth;
+  kotakHelpers: typeof kotakHelpers;
+  kotakSync: typeof kotakSync;
+  pillars: typeof pillars;
+  powerTasks: typeof powerTasks;
   providers: typeof providers;
   transactions: typeof transactions;
 }>;

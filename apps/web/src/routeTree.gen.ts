@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as KiteCallbackRouteImport } from './routes/kite/callback'
 import { Route as AppTasksRouteImport } from './routes/_app/tasks'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppNewMeRouteImport } from './routes/_app/new-me'
+import { Route as AppHoldingsRouteImport } from './routes/_app/holdings'
 import { Route as AppHabitsRouteImport } from './routes/_app/habits'
 import { Route as AppCashflowRouteImport } from './routes/_app/cashflow'
 import { Route as AppBudgetRouteImport } from './routes/_app/budget'
@@ -39,6 +41,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const KiteCallbackRoute = KiteCallbackRouteImport.update({
+  id: '/kite/callback',
+  path: '/kite/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppTasksRoute = AppTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
@@ -52,6 +59,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
 const AppNewMeRoute = AppNewMeRouteImport.update({
   id: '/new-me',
   path: '/new-me',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHoldingsRoute = AppHoldingsRouteImport.update({
+  id: '/holdings',
+  path: '/holdings',
   getParentRoute: () => AppRoute,
 } as any)
 const AppHabitsRoute = AppHabitsRouteImport.update({
@@ -108,9 +120,11 @@ export interface FileRoutesByFullPath {
   '/budget': typeof AppBudgetRoute
   '/cashflow': typeof AppCashflowRoute
   '/habits': typeof AppHabitsRoute
+  '/holdings': typeof AppHoldingsRoute
   '/new-me': typeof AppNewMeRoute
   '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
+  '/kite/callback': typeof KiteCallbackRoute
   '/attack-mode/goals': typeof AppAttackModeGoalsRoute
   '/attack-mode/journal': typeof AppAttackModeJournalRoute
   '/attack-mode/problems': typeof AppAttackModeProblemsRoute
@@ -122,9 +136,11 @@ export interface FileRoutesByTo {
   '/budget': typeof AppBudgetRoute
   '/cashflow': typeof AppCashflowRoute
   '/habits': typeof AppHabitsRoute
+  '/holdings': typeof AppHoldingsRoute
   '/new-me': typeof AppNewMeRoute
   '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
+  '/kite/callback': typeof KiteCallbackRoute
   '/': typeof AppIndexRoute
   '/attack-mode/goals': typeof AppAttackModeGoalsRoute
   '/attack-mode/journal': typeof AppAttackModeJournalRoute
@@ -140,9 +156,11 @@ export interface FileRoutesById {
   '/_app/budget': typeof AppBudgetRoute
   '/_app/cashflow': typeof AppCashflowRoute
   '/_app/habits': typeof AppHabitsRoute
+  '/_app/holdings': typeof AppHoldingsRoute
   '/_app/new-me': typeof AppNewMeRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/tasks': typeof AppTasksRoute
+  '/kite/callback': typeof KiteCallbackRoute
   '/_app/': typeof AppIndexRoute
   '/_app/attack-mode/goals': typeof AppAttackModeGoalsRoute
   '/_app/attack-mode/journal': typeof AppAttackModeJournalRoute
@@ -159,9 +177,11 @@ export interface FileRouteTypes {
     | '/budget'
     | '/cashflow'
     | '/habits'
+    | '/holdings'
     | '/new-me'
     | '/settings'
     | '/tasks'
+    | '/kite/callback'
     | '/attack-mode/goals'
     | '/attack-mode/journal'
     | '/attack-mode/problems'
@@ -173,9 +193,11 @@ export interface FileRouteTypes {
     | '/budget'
     | '/cashflow'
     | '/habits'
+    | '/holdings'
     | '/new-me'
     | '/settings'
     | '/tasks'
+    | '/kite/callback'
     | '/'
     | '/attack-mode/goals'
     | '/attack-mode/journal'
@@ -190,9 +212,11 @@ export interface FileRouteTypes {
     | '/_app/budget'
     | '/_app/cashflow'
     | '/_app/habits'
+    | '/_app/holdings'
     | '/_app/new-me'
     | '/_app/settings'
     | '/_app/tasks'
+    | '/kite/callback'
     | '/_app/'
     | '/_app/attack-mode/goals'
     | '/_app/attack-mode/journal'
@@ -203,6 +227,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   SplatRoute: typeof SplatRoute
   AppRoute: typeof AppRouteWithChildren
+  KiteCallbackRoute: typeof KiteCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -228,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/kite/callback': {
+      id: '/kite/callback'
+      path: '/kite/callback'
+      fullPath: '/kite/callback'
+      preLoaderRoute: typeof KiteCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/tasks': {
       id: '/_app/tasks'
       path: '/tasks'
@@ -247,6 +279,13 @@ declare module '@tanstack/react-router' {
       path: '/new-me'
       fullPath: '/new-me'
       preLoaderRoute: typeof AppNewMeRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/holdings': {
+      id: '/_app/holdings'
+      path: '/holdings'
+      fullPath: '/holdings'
+      preLoaderRoute: typeof AppHoldingsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/habits': {
@@ -339,6 +378,7 @@ interface AppRouteChildren {
   AppBudgetRoute: typeof AppBudgetRoute
   AppCashflowRoute: typeof AppCashflowRoute
   AppHabitsRoute: typeof AppHabitsRoute
+  AppHoldingsRoute: typeof AppHoldingsRoute
   AppNewMeRoute: typeof AppNewMeRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppTasksRoute: typeof AppTasksRoute
@@ -351,6 +391,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppBudgetRoute: AppBudgetRoute,
   AppCashflowRoute: AppCashflowRoute,
   AppHabitsRoute: AppHabitsRoute,
+  AppHoldingsRoute: AppHoldingsRoute,
   AppNewMeRoute: AppNewMeRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppTasksRoute: AppTasksRoute,
@@ -362,6 +403,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   SplatRoute: SplatRoute,
   AppRoute: AppRouteWithChildren,
+  KiteCallbackRoute: KiteCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

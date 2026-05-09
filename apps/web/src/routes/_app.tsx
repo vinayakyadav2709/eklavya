@@ -13,6 +13,8 @@ function LayoutComponent() {
   useQuery(api.accounts.get)
   useQuery(api.transactions.get)
   useQuery(api.providers.get)
+  useQuery(api.pillars.get)
+  useQuery(api.powerTasks.get, {})
 
   return (
     <WorkspaceLayout>

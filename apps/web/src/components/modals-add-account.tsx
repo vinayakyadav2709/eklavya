@@ -59,7 +59,7 @@ export function AddAccountModal({ onClose }: { onClose: () => void }) {
         balance: parseFloat(balance) || 0,
         institution: institution || undefined,
         isLiability,
-        providerId: providerId || undefined,
+        providerId: (providerId as any) || undefined,
       });
       onClose();
     } catch (e) {
