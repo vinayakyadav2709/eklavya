@@ -33,6 +33,7 @@ Thumbs.db
 logs
 
 # === Local env files (secrets) ===
+.env
 .env.local
 .env.*.local
 
