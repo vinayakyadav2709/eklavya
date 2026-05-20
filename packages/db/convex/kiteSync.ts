@@ -33,6 +33,12 @@ export const syncHoldings = action({
 
     if (!res.ok) {
       const text = await res.text();
+      if (res.status === 403) {
+        await ctx.runMutation(api.accounts.markExpired, {
+          accountId: args.accountId,
+        });
+        throw new Error(`Kite session expired. Please reconnect your Kite account.`);
+      }
       throw new Error(`Kite holdings fetch failed: ${res.status} ${text}`);
     }
 

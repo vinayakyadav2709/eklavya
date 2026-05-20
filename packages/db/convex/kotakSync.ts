@@ -38,6 +38,12 @@ export const syncHoldings = action({
 
     if (!res.ok) {
       const text = await res.text();
+      if (res.status === 403 || res.status === 401) {
+        await ctx.runMutation(api.accounts.markExpired, {
+          accountId: args.accountId,
+        });
+        throw new Error(`Kotak session expired. Please reconnect your Kotak account.`);
+      }
       throw new Error(`Kotak holdings fetch failed: ${res.status} ${text}`);
     }
 

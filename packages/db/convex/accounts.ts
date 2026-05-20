@@ -58,6 +58,22 @@ export const updateSync = mutation({
   },
 });
 
+export const markExpired = mutation({
+  args: {
+    accountId: v.id("accounts"),
+  },
+  handler: async (ctx, args) => {
+    const account = await ctx.db.get(args.accountId);
+    if (!account || !account.apiConfig) return null;
+    return await ctx.db.patch(args.accountId, {
+      apiConfig: {
+        status: "expired",
+        config: account.apiConfig.config,
+      },
+    });
+  },
+});
+
 export const saveKiteCredentials = mutation({
   args: {
     accountId: v.id("accounts"),
